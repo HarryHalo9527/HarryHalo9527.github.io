@@ -162,6 +162,20 @@ a {
   line-height: 1.12;
 }
 
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(130, 220, 255, 0.08);
+  border: 1px solid rgba(130, 220, 255, 0.14);
+  color: var(--accent-2);
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
 .section-header p,
 .brand-meta,
 .hero-quote,
@@ -299,16 +313,29 @@ a {
 }
 
 .hero-tags,
+.hero-quick-links,
 .contact-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
+.hero-quick-links a {
+  color: var(--muted);
+  font-size: 0.93rem;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(130, 220, 255, 0.18);
+}
+
+.hero-quick-links a:hover {
+  color: var(--accent-2);
+}
+
 .research-tag,
 .contact-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: 8px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
@@ -512,10 +539,41 @@ a {
   .site-header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 14px;
+    padding-top: 14px;
+    padding-bottom: 14px;
   }
 
   .nav {
     justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: calc(100% + 8px);
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav a {
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .hero-profile {
+    align-items: center;
+  }
+
+  .profile-facts {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fact {
+    min-height: 100%;
   }
 
   .profile-photo {
@@ -531,6 +589,40 @@ a {
     padding-bottom: 42px;
   }
 
+  .site-header {
+    gap: 10px;
+  }
+
+  .brand-name {
+    font-size: 1.16rem;
+  }
+
+  .brand-meta {
+    font-size: 0.82rem;
+  }
+
+  .hero {
+    gap: 20px;
+  }
+
+  .hero-text h1 {
+    font-size: 2rem;
+  }
+
+  .title-sub {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.48em;
+  }
+
+  .hero-kicker {
+    font-size: 0.78rem;
+  }
+
+  .profile-facts {
+    grid-template-columns: 1fr;
+  }
+
   .research-tag,
   .contact-pill,
   .button {
@@ -540,7 +632,30 @@ a {
 
   .cta,
   .hero-tags,
+  .hero-quick-links,
   .contact-pills {
     width: 100%;
+  }
+
+  .hero-quick-links {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .summary-card,
+  .contact-card,
+  .cert-body,
+  .info-card,
+  .fact {
+    padding: 16px;
+  }
+
+  .qr-frame {
+    min-height: 220px;
+    padding: 14px;
+  }
+
+  .qr-frame img {
+    width: min(240px, 100%);
   }
 }
