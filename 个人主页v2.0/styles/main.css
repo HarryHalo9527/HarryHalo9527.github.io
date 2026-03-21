@@ -1594,11 +1594,22 @@ a.contact-pill:hover {
 }
 
 @media (max-width: 860px) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  body::before,
+  body::after {
+    display: none;
+  }
+
   .site-header {
     width: calc(100% - 16px);
     top: 8px;
     min-height: 74px;
     padding: 0 1rem;
+    backdrop-filter: none;
+    box-shadow: none;
   }
 
   .brand-tag {
@@ -1626,6 +1637,22 @@ a.contact-pill:hover {
   .hero {
     min-height: auto;
     border-radius: 28px;
+    box-shadow: none;
+  }
+
+  .hero::before {
+    opacity: 0.1;
+    background: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 72px 72px;
+  }
+
+  .hero::after {
+    background: linear-gradient(180deg, transparent 0%, rgba(5, 11, 20, 0.24) 100%);
+  }
+
+  .hero-copy > *,
+  .hero-panel > * {
+    animation: none;
   }
 
   .hero-label,
@@ -1683,6 +1710,8 @@ a.contact-pill:hover {
     bottom: 86px;
     width: auto;
     max-height: 68vh;
+    backdrop-filter: none;
+    box-shadow: 0 10px 28px rgba(2, 8, 18, 0.42);
   }
 
   .chat-toggle {
@@ -1691,6 +1720,33 @@ a.contact-pill:hover {
     width: 58px;
     height: 58px;
     border-radius: 20px;
+  }
+
+  .hero-portrait-card,
+  .hero-signal-card,
+  .tag,
+  .hero-stat,
+  .mobile-dock {
+    backdrop-filter: none;
+  }
+
+  .card,
+  .os-framework-card,
+  .playground-card,
+  .feed-card,
+  .timeline-item,
+  .interface-card {
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .card:hover,
+  .os-framework-card:hover,
+  .playground-card:hover,
+  .feed-card:hover,
+  .timeline-item:hover,
+  .interface-card:hover {
+    transform: none;
+    box-shadow: none;
   }
 }
 
@@ -1727,5 +1783,16 @@ a.contact-pill:hover {
 
   .hero-signal-list strong {
     font-size: 0.96rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
