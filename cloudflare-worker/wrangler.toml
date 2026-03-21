@@ -1,0 +1,10 @@
+name = "yangzhuanfu-ai-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# 部署前执行：wrangler secret put GEMINI_API_KEY
+# 如需启用持久化日限流，请取消下面的注释并填入真实的 KV namespace id。
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID"
+# preview_id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"

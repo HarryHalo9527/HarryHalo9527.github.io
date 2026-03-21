@@ -6,6 +6,15 @@
   let currentQuestion = 0;
   let answers = {};
 
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   async function loadModel() {
     if (turnModel) return turnModel;
     const resp = await fetch('data/turn-model.json');
@@ -44,7 +53,7 @@
 
     if (currentQuestion >= total) {
       document.getElementById('turn-submit').style.display = 'inline-flex';
-      document.getElementById('turn-submit').addEventListener('click', () => handleSubmit(model));
+      document.getElementById('turn-submit').onclick = () => handleSubmit(model);
       return;
     }
 
@@ -74,15 +83,17 @@
     // Bind option clicks
     container.querySelectorAll('.q-option').forEach(opt => {
       opt.addEventListener('click', function() {
+        if (container.dataset.locked === 'true') return;
+        container.dataset.locked = 'true';
         container.querySelectorAll('.q-option').forEach(o => o.classList.remove('selected'));
         this.classList.add('selected');
 
         const score = parseInt(this.dataset.score);
-        if (!answers[q.dim]) answers[q.dim] = [];
-        answers[q.dim].push(score);
+        answers[currentQuestion] = { dim: q.dim, score };
 
         setTimeout(() => {
           currentQuestion++;
+          container.dataset.locked = 'false';
           renderQuestion(model);
         }, 300);
       });
@@ -91,7 +102,16 @@
 
   function calculateScores() {
     const dimScores = {};
-    for (const [dim, scores] of Object.entries(answers)) {
+    const groupedScores = { T: [], U: [], R: [], N: [] };
+
+    Object.values(answers).forEach(answer => {
+      if (answer && groupedScores[answer.dim]) {
+        groupedScores[answer.dim].push(answer.score);
+      }
+    });
+
+    for (const [dim, scores] of Object.entries(groupedScores)) {
+      if (scores.length === 0) continue;
       const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
       dimScores[dim] = Math.round(avg);
     }
@@ -125,7 +145,9 @@
 
         const response = await LLM_API.chat(model.systemPrompt, userMsg, {
           temperature: 0.5,
-          maxTokens: 1200
+          maxTokens: 800,
+          timeoutMs: 10000,
+          retries: 1
         });
         analysis = LLM_API.parseJSON(response);
       }
@@ -179,12 +201,15 @@
     const analysisEl = resultPanel.querySelector('.result-analysis');
 
     if (analysis) {
+      const safeStrengths = Array.isArray(analysis.strengths) ? analysis.strengths : [];
+      const safeWeaknesses = Array.isArray(analysis.weaknesses) ? analysis.weaknesses : [];
+      const safeActionPlan = Array.isArray(analysis.actionPlan) ? analysis.actionPlan : [];
       analysisEl.innerHTML = `
         <h4>个性化分析</h4>
-        <p>${analysis.summary}</p>
-        ${analysis.strengths ? `<h4 style="margin-top:1rem;">你的优势</h4><ul>${analysis.strengths.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
-        ${analysis.weaknesses ? `<h4 style="margin-top:1rem;">需要提升的方面</h4><ul>${analysis.weaknesses.map(w => `<li>${w}</li>`).join('')}</ul>` : ''}
-        ${analysis.actionPlan ? `<h4 style="margin-top:1rem;">行动建议</h4><ul>${analysis.actionPlan.map((a, i) => `<li><strong>第${i+1}步：</strong>${a}</li>`).join('')}</ul>` : ''}
+        <p>${escapeHtml(analysis.summary)}</p>
+        ${safeStrengths.length > 0 ? `<h4 style="margin-top:1rem;">你的优势</h4><ul>${safeStrengths.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>` : ''}
+        ${safeWeaknesses.length > 0 ? `<h4 style="margin-top:1rem;">需要提升的方面</h4><ul>${safeWeaknesses.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>` : ''}
+        ${safeActionPlan.length > 0 ? `<h4 style="margin-top:1rem;">行动建议</h4><ul>${safeActionPlan.map((a, i) => `<li><strong>第${i+1}步：</strong>${escapeHtml(a)}</li>`).join('')}</ul>` : ''}
       `;
     } else {
       // Fallback analysis

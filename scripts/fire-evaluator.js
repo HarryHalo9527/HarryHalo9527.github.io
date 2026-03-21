@@ -4,6 +4,15 @@
 (function() {
   let fireModel = null;
 
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   async function loadModel() {
     if (fireModel) return fireModel;
     const resp = await fetch('data/fire-model.json');
@@ -85,7 +94,9 @@
 
       const response = await LLM_API.chat(model.systemPrompt, userMsg, {
         temperature: 0.3,
-        maxTokens: 1500
+        maxTokens: 900,
+        timeoutMs: 10000,
+        retries: 1
       });
 
       const result = LLM_API.parseJSON(response);
@@ -204,20 +215,24 @@
 
     // Analysis
     const analysis = resultPanel.querySelector('.result-analysis');
+    const safeSummary = escapeHtml(result.summary);
+    const safeReasons = result.reasons || {};
+    const safeWeaknesses = Array.isArray(result.weaknesses) ? result.weaknesses : [];
+    const safeRecommendations = Array.isArray(result.recommendations) ? result.recommendations : [];
     analysis.innerHTML = `
       <h4>评估分析</h4>
-      <p>${result.summary}</p>
+      <p>${safeSummary}</p>
       ${result.reasons ? `
         <h4 style="margin-top:1rem;">各维度评分理由</h4>
-        <ul>${dims.map(d => `<li><strong>${d.key} - ${d.label}：</strong>${result.reasons[d.key]}</li>`).join('')}</ul>
+        <ul>${dims.map(d => `<li><strong>${escapeHtml(d.key)} - ${escapeHtml(d.label)}：</strong>${escapeHtml(safeReasons[d.key])}</li>`).join('')}</ul>
       ` : ''}
-      ${result.weaknesses && result.weaknesses.length > 0 ? `
+      ${safeWeaknesses.length > 0 ? `
         <h4 style="margin-top:1rem;">短板补齐建议</h4>
-        <ul>${result.weaknesses.map(w => `<li>${w}</li>`).join('')}</ul>
+        <ul>${safeWeaknesses.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
       ` : ''}
-      ${result.recommendations ? `
+      ${safeRecommendations.length > 0 ? `
         <h4 style="margin-top:1rem;">落地路径建议</h4>
-        <ul>${result.recommendations.map(r => `<li>${r}</li>`).join('')}</ul>
+        <ul>${safeRecommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
       ` : ''}
     `;
 

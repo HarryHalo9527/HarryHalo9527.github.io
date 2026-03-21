@@ -42,6 +42,7 @@
 
   let chatHistory = [];
   let isOpen = false;
+  let isSending = false;
 
   function init() {
     const toggle = document.getElementById('chat-toggle');
@@ -90,10 +91,16 @@
   }
 
   async function handleSend() {
+    if (isSending) return;
+
     const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('chat-send');
     const message = input.value.trim();
     if (!message) return;
 
+    isSending = true;
+    input.disabled = true;
+    sendBtn.disabled = true;
     input.value = '';
     addMessage('user', message);
 
@@ -119,15 +126,23 @@
 
       const response = await LLM_API.chat(AGENT_SYSTEM_PROMPT, message, {
         history: history.slice(0, -1),
-        temperature: 0.7,
-        maxTokens: 500
+        temperature: 0.5,
+        maxTokens: 280,
+        timeoutMs: 10000,
+        retries: 1
       });
 
       typing.remove();
       addMessage('agent', response);
     } catch (err) {
+      console.error('Chat agent error:', err);
       typing.remove();
-      addMessage('agent', getFallbackResponse(message));
+      addMessage('agent', `${getFallbackResponse(message)}\n\n当前网络或AI代理响应较慢，我先给你一个本地回答。`);
+    } finally {
+      isSending = false;
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
     }
   }
 

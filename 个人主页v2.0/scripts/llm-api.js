@@ -9,6 +9,8 @@ const LLM_API = {
   // Fallback: direct API call (for local testing only)
   directUrl: 'https://api.openai.com/v1/chat/completions',
   apiKey: '',
+  requestTimeoutMs: 12000,
+  retryAttempts: 1,
 
   /**
    * Configure the API endpoint
@@ -17,6 +19,7 @@ const LLM_API = {
     if (options.workerUrl) this.workerUrl = options.workerUrl;
     if (options.directUrl) this.directUrl = options.directUrl;
     if (options.apiKey) this.apiKey = options.apiKey;
+    if (options.requestTimeoutMs) this.requestTimeoutMs = options.requestTimeoutMs;
   },
 
   /**
@@ -50,39 +53,67 @@ const LLM_API = {
       max_tokens: options.maxTokens || 2000
     };
 
-    try {
-      let response;
+    const timeoutMs = options.timeoutMs || this.requestTimeoutMs;
+    const retryCount = options.retries ?? this.retryAttempts;
+    const maxAttempts = Math.max(1, retryCount + 1);
+    let lastError = null;
 
-      if (this.workerUrl) {
-        response = await fetch(this.workerUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-      } else if (this.apiKey) {
-        response = await fetch(this.directUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
-          },
-          body: JSON.stringify(body)
-        });
-      } else {
-        throw new Error('API未配置。请设置Cloudflare Worker URL或API Key。');
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        let response;
+
+        if (this.workerUrl) {
+          response = await fetch(this.workerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: controller.signal
+          });
+        } else if (this.apiKey) {
+          response = await fetch(this.directUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal
+          });
+        } else {
+          throw new Error('API未配置。请设置Cloudflare Worker URL或API Key。');
+        }
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`API请求失败 (${response.status}): ${error}`);
+        }
+
+        const data = await response.json();
+        const content = data?.choices?.[0]?.message?.content?.trim();
+
+        if (!content) {
+          throw new Error('API返回了空内容');
+        }
+
+        return content;
+      } catch (err) {
+        lastError = err.name === 'AbortError'
+          ? new Error(`请求超时（>${timeoutMs}ms）`)
+          : err;
+
+        if (attempt === maxAttempts) {
+          console.error('LLM API error:', lastError);
+          throw lastError;
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`API请求失败 (${response.status}): ${error}`);
-      }
-
-      const data = await response.json();
-      return data.choices[0].message.content;
-    } catch (err) {
-      console.error('LLM API error:', err);
-      throw err;
     }
+
+    throw lastError || new Error('LLM 请求失败');
   },
 
   /**
