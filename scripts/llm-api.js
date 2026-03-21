@@ -3,8 +3,8 @@
  * Configure the worker URL before deployment
  */
 const LLM_API = {
-  // Change this to your Cloudflare Worker URL after deployment
-  workerUrl: '',
+  // Cloudflare Worker proxy URL
+  workerUrl: 'https://yangzhuanfu-ai-proxy.jiangqi143.workers.dev/',
 
   // Fallback: direct API call (for local testing only)
   directUrl: 'https://api.openai.com/v1/chat/completions',
